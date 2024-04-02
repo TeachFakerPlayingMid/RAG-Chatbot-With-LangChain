@@ -38,54 +38,7 @@ Make sure to alias all statements that follow as with statement (e.g. WITH v as 
 If you need to divide numbers, make sure to filter the denominator to be non zero, this is important.
 
 Examples:
-# Who is the oldest patient and how old are they?
-MATCH (p:Patient)
-RETURN p.name AS oldest_patient,
-       duration.between(date(p.dob), date()).years AS age
-ORDER BY age DESC
-LIMIT 1
 
-# Which physician has billed the least to Cigna
-MATCH (p:Payer)<-[c:COVERED_BY]-(v:Visit)-[t:TREATS]-(phy:Physician)
-WHERE p.name = 'Cigna'
-RETURN phy.name AS physician_name, SUM(c.billing_amount) AS total_billed
-ORDER BY total_billed
-LIMIT 1
-
-# Which state had the largest percent increase in Cigna visits
-# from 2022 to 2023?
-MATCH (h:Hospital)<-[:AT]-(v:Visit)-[:COVERED_BY]->(p:Payer)
-WHERE p.name = 'Cigna' AND v.admission_date >= '2022-01-01' AND
-v.admission_date < '2024-01-01'
-WITH h.state_name AS state, COUNT(v) AS visit_count,
-     SUM(CASE WHEN v.admission_date >= '2022-01-01' AND
-     v.admission_date < '2023-01-01' THEN 1 ELSE 0 END) AS count_2022,
-     SUM(CASE WHEN v.admission_date >= '2023-01-01' AND
-     v.admission_date < '2024-01-01' THEN 1 ELSE 0 END) AS count_2023
-WITH state, visit_count, count_2022, count_2023,
-     (toFloat(count_2023) - toFloat(count_2022)) / toFloat(count_2022) * 100
-     AS percent_increase
-RETURN state, percent_increase
-ORDER BY percent_increase DESC
-LIMIT 1
-
-# How many non-emergency patients in North Carolina have written reviews?
-match (r:Review)<-[:WRITES]-(v:Visit)-[:AT]->(h:Hospital)
-where h.state_name = 'NC' and v.admission_type <> 'Emergency'
-return count(*)
-
-String category values:
-Test results are one of: 'Inconclusive', 'Normal', 'Abnormal';
-Visit statuses are one of: 'OPEN', 'DISCHARGED';
-Admission Types are one of: 'Elective', 'Emergency', 'Urgent';
-Payer names are one of: 'Cigna', 'Blue Cross', 'UnitedHealthcare', 'Medicare','Aetna';
-
-A visit is considered open if its status is 'OPEN' and the discharge date is
-missing.
-Use abbreviations when
-filtering on hospital states (e.g. "Texas" is "TX",
-"Colorado" is "CO", "North Carolina" is "NC",
-"Florida" is "FL", "Georgia" is "GA, etc.)
 
 Make sure to use IS NULL or IS NOT NULL when analyzing missing properties.
 Never return embedding properties in your queries. You must never include the
@@ -123,12 +76,6 @@ If the information is not empty, you must provide an answer using the
 results. If the question involves a time duration, assume the query
 results are in units of days unless otherwise specified.
 
-When names are provided in the query results, such as hospital names,
-beware  of any names that have commas or other punctuation in them.
-For instance, 'Jones, Brown and Murray' is a single hospital name,
-not multiple hospitals. Make sure you return any list of names in
-a way that isn't ambiguous and allows someone to tell what the full
-names are.
 
 Never say you don't have the right information if there is data in
 the query results. Make sure to show all the relevant query results
